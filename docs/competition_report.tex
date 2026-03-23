@@ -462,93 +462,80 @@ A Pytest suite runs 10 automated tests per ZIP before every build, and a Docker-
 This pipeline prevented at least two additional invalid submissions.
 
 % ===========================================================================
-\section{Community Approaches}
+\section{Discussion}
 \label{sec:community}
 
-Post-competition discussion in the official Slack channel revealed interesting patterns across teams.
-What follows is a summary of approaches shared by participants, contrasted with our own.
+Post-competition discussion in the official Slack channel revealed that many teams explored similar directions, arriving at converging conclusions.
+This section summarizes shared findings and open questions from the community.
 
-\paragraph{Synthetic data was widely attempted but rarely helped.}
-Andr\'e Mikalsen (0.920) used Nano Banana~2 to generate variations of product images showing them from different angles, lying down, and in shelf shadows --- the most creative synthetic data approach reported.
-Andreas Hatlem (0.9220) generated approximately 1,400 synthetic images by pasting product reference photos onto shelf backgrounds with alpha blending and random transformations, but found models trained on this data plateaued at 0.788 versus 0.799 without it.
-Markus Hei went further, physically visiting stores to photograph shelves of underrepresented products and using Gemini with SAM3 for silver labeling --- but his best score remained the YOLOv8 baseline from day~1.
-Dag Koding from DKIT also tried synthetic data and got worse results, and even considered creating 3D models of product packaging but ran out of time.
-Ludvig {\O}vrevik used Nano Banana to create empty shelf images and placed products on them, producing 3,000 synthetic images that ultimately did not improve his model.
+\subsection{Synthetic Data}
 
-Our approach stands out by its absence of synthetic data.
-We focused entirely on the 248 provided shelf images, investing our time in model architecture diversity and inference strategy rather than data augmentation.
-The domain gap between clean product photos and real shelf crops proved too large for most synthetic approaches to bridge.
+Synthetic data generation was one of the most popular strategies, with at least six teams reporting results.
+Andr\'e Mikalsen (0.920) used Nano Banana~2 to generate product image variations in shelf-realistic contexts (different angles, shadows, lying down).
+Andreas Hatlem (0.9220) generated approximately 1,400 synthetic images by compositing reference photos onto shelf backgrounds.
+Markus Hei physically visited stores to photograph underrepresented products and used Gemini with SAM3 for silver labeling.
+Dag Koding from DKIT experimented with synthetic data and even considered 3D models of product packaging.
+Ludvig {\O}vrevik produced 3,000 synthetic images using Nano Banana.
+J{\o}rgen R{\o}rvik generated 50 images per product class using Nano Banana with cropped references.
 
-\paragraph{Multi-model ensembles were the dominant strategy.}
-Andreas Hatlem (0.9220) used 3-model WBF with YOLOv8x + YOLO26-x + a K-fold model at 1280px, and independently discovered the same diversity principle we relied on: his weakest individual model (K-fold~2, 0.749~mAP) consistently gave the best ensemble results, and every swap for a stronger model made the ensemble worse.
-Walgermo from Matriks (0.9208) used a 3-model YOLOv8l ensemble with random seeds after a parameter sweep.
+The consistent finding across all teams was that synthetic data did not improve scores.
+We did not attempt synthetic data ourselves, instead investing time in architecture diversity.
+In retrospect, we believe the domain gap between studio product photos and real shelf crops is the primary obstacle --- compositing techniques cannot replicate the complex interactions of lighting, occlusion, price tags, and shelf geometry that characterize real retail images.
+Additionally, synthetic data risks reducing ensemble diversity if all models train on the same generated artifacts.
 
-\paragraph{Training on all 248 images was a recurring finding.}
-Multiple teams, including Hatlem and ourselves, found that withholding images for validation hurt performance more than the validation signal was worth.
-Mikalsen generated synthetic validation images and used Gemini~3.1 Flash for classification labels instead --- a creative workaround for the same problem.
+\subsection{Converging Findings}
 
-\paragraph{Post-processing tuning universally failed.}
-Hatlem reported that ``every single tweak hurt the score'' for post-processing (WBF parameters, Soft-NMS, temperature scaling, multi-scale TTA variants), matching our own experience exactly.
+Several findings were independently confirmed by multiple teams.
+Training on all 248 images (without a validation split) was reported as a significant improvement by Hatlem (+0.004) and matches our experience.
+Mikalsen worked around the lack of validation data by generating synthetic validation images with Gemini~3.1 Flash for classification labels.
+Multi-model WBF ensembles were the dominant strategy among top teams.
+Hatlem independently discovered the same diversity principle we relied on: his weakest individual model (K-fold~2, 0.749~mAP) consistently gave the best ensemble results, and swapping it for stronger models always hurt the ensemble score.
+Walgermo from Matriks (0.9208) also used a 3-model ensemble with random seed diversity.
+Post-processing tuning (WBF parameters, Soft-NMS, temperature scaling) was reported as unhelpful by both Hatlem and ourselves.
 
-\paragraph{The unknown product ambiguity.}
-P{\aa}l Bentsen raised an interesting question about the task specification: should products present in the image but not belonging to any of the 356 annotated categories be detected and classified as an ``unknown product'' class, or should they be ignored entirely?
-As shown in Figure~\ref{fig:unknown}, the Natreen sweetener products on the shelf have no ground truth annotations despite being clearly visible products.
-In a real-world retail system, detecting all products (including unknown ones) would be essential for inventory management.
-The competition's handling of this edge case was ambiguous --- and the answer affected model design, since detecting extra products that the evaluator ignores would generate false positives that hurt the score.
+Eirik B{\ae}kkelund took a different approach with DINOv2 ViT-B/14 and an ArcFace head for classification, achieving roughly 94\% accuracy on reference embeddings.
+His main issue was coffee brand confusion (Ali Kaffe alone accounted for 20\% of errors), and he noted that lightweight OCR models could potentially resolve these confusions within the 420\,MB file size budget.
+
+\subsection{Open Questions}
+
+\paragraph{The unknown product problem.}
+P{\aa}l Bentsen raised an interesting question about the task specification: should products present in the image but not belonging to any of the 356 annotated categories be detected and classified as ``unknown,'' or ignored entirely?
+As shown in Figure~\ref{fig:unknown}, the Natreen sweetener products on the shelf have no ground truth annotations despite being clearly visible.
+In a real-world retail system, detecting all products would be essential for inventory management.
+The competition's handling of this edge case was ambiguous, and the answer directly affects model design --- detecting products that the evaluator ignores generates false positives that hurt the score.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{memes/unknown_product.png}
-\caption{The unknown product problem, highlighted by P{\aa}l Bentsen.
-The Natreen products on the lower shelf have no ground truth annotations.
-Should a detection system ignore them, or classify them as ``unknown''?
-The competition did not clearly specify this, creating a design dilemma for participants.}
+\caption{The unknown product problem, raised by P{\aa}l Bentsen.
+The Natreen products on the lower shelf have no ground truth annotations despite being clearly visible.
+In a real-world system these should be detected; in the competition, detecting them may hurt the score.}
 \label{fig:unknown}
 \end{figure}
 
-\paragraph{Annotation quality was questioned.}
-P{\aa}l Bentsen also observed that the ground truth annotations contained outright errors, with their model making correct predictions that lacked corresponding annotations.
-They manually corrected a selection and retrained from scratch, gambling that the private test set would be better annotated.
-
-\subsection{Why Synthetic Data Failed}
-\label{sec:synthetic}
-
-The community results paint a clear picture: at least six teams tried synthetic data generation, and none achieved improvements.
-We believe several factors explain this.
-
-First, the \textbf{domain gap} between product reference images (clean studio shots on white backgrounds) and real shelf crops (complex lighting, reflections, partial occlusion, price tags, shelf edges) is substantial.
-Simple compositing techniques (alpha blending, pasting onto backgrounds) do not capture the visual complexity of how products actually appear on shelves.
-
-Second, the \textbf{evaluation metric penalizes noise}.
-Even if synthetic data helps the model detect more products, any systematic bias it introduces (wrong scale, unrealistic shadows, incorrect spatial relationships between products) creates false positives or classification errors that directly reduce mAP.
-
-Third, the \textbf{dataset is already highly specialized}.
-The 248 real shelf images contain approximately 22,700 annotations of actual products in their real retail context.
-The signal-to-noise ratio of these real annotations is far higher than any synthetic generation pipeline could achieve in the 69-hour time constraint.
-
-Fourth, and most subtly, synthetic data may \textbf{reduce ensemble diversity}.
-If all models in an ensemble are trained on the same synthetic data, they learn the same synthetic artifacts and fail on the same real-world edge cases.
-Our approach of using only real data but varying the augmentation strategy and architecture preserved the independent failure modes that WBF exploits.
+\paragraph{Annotation quality.}
+Bentsen also observed cases where the ground truth contained errors --- correct model predictions that lacked corresponding annotations.
+They manually corrected a selection and retrained, an approach that highlights the tension between trusting provided labels and investing time in data quality.
 
 % ===========================================================================
 \section{Lessons Learned}
 \label{sec:lessons}
 
 \textbf{Generalization beats optimization.}
-Our most important lesson is that optimizing for known test sets is a losing strategy when the final evaluation uses a different distribution.
-We moved from 4th on the public leaderboard to 1st on the private test.
-Teams that achieved higher public scores by fine-tuning their approach dropped in the final ranking.
+Our most important lesson is that optimizing for a known test set is risky when the final evaluation uses a different distribution.
+Our public leaderboard score (0.9226, 4th place) did not predict our private test result (0.7113), and the gap between public and private rankings was significant across teams.
+Designing for robustness rather than maximizing a single metric proved more reliable.
 
 \textbf{Diversity over specialization.}
-Every attempt at specialization (classification loss tuning, two-stage classifiers, gallery re-ranking, model soups) failed to generalize.
+In our experiments, every attempt at specialization (classification loss tuning, two-stage classifiers, gallery re-ranking, model soups) failed to generalize.
 Every form of diversity (architecture, augmentation, scale) helped.
-On small datasets, invest in making \emph{different types of predictions} rather than \emph{better predictions of the same type}.
+On small datasets, the lesson is to invest in making \emph{different types of predictions} rather than \emph{better predictions of the same type}.
 
 \textbf{Reject locally-good changes.}
 The hardest discipline was rejecting techniques that showed clear local improvements.
-A model with \texttt{cls=2.0} scored +0.015 higher locally --- a massive improvement by any measure.
+Our \texttt{cls=2.0} model scored +0.015 higher locally --- a massive improvement by any measure.
 But it showed zero test improvement.
-The courage to walk away from validated-but-not-generalizing improvements was the single most important factor in our win.
+Learning to distinguish genuine gains from overfitting artifacts, without a reliable validation set, was one of the hardest challenges of the competition.
 
 \textbf{The domain matters.}
 Grocery shelf recognition has strong structural priors (upright products, grid layouts, canonical lighting) that reward domain-aware choices like disabling vertical flip augmentation.
