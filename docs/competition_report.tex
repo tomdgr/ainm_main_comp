@@ -58,7 +58,7 @@
 \begin{abstract}
 Congratulations to all participants and winners of NM i AI 2026, and a special thanks to the organizers at Astar Technologies, the task sponsors NorgesGruppen Data, Tripletex, and Astar, and all volunteers who made the competition possible.
 
-We present the winning solution to the NorgesGruppen grocery shelf product detection task (Task~3), achieving \textbf{1st place} with 0.7113~mAP on the private test set.
+We present our solution to the NorgesGruppen grocery shelf product detection task (Task~3), which achieved 0.7113~mAP on the private test set.
 The task requires localizing and classifying 356 fine-grained grocery product categories on retail shelf images, scored as $0.7 \times \text{mAP}_{\text{det}} + 0.3 \times \text{mAP}_{\text{cls}}$.
 Our key insight was that generalization to the unseen private test distribution --- not training-set accuracy --- determines the final ranking.
 We built a 3-model ensemble combining three distinct YOLO architectures (YOLOv8x, YOLO11x, YOLOv8l) with diverse augmentation strategies, fused via multi-scale inference and Weighted Boxes Fusion.
@@ -145,11 +145,11 @@ These observations produced three design principles that guided all subsequent d
 \subsection{Architecture Diversity}
 \label{sec:diversity}
 
-The core of our winning submission is a heterogeneous ensemble of three architectures, each contributing a different ``view'' of the data.
+The core of our submission is a heterogeneous ensemble of three architectures, each contributing a different ``view'' of the data.
 
 \begin{table}[H]
 \centering
-\caption{The three models in the winning ensemble.}
+\caption{The three models in the final ensemble.}
 \label{tab:models}
 \begin{tabular}{@{}llll@{}}
 \toprule
@@ -239,7 +239,7 @@ The final metric is $\text{mAP}@0.5 = \frac{1}{|\mathcal{C}|} \sum_{c \in \mathc
 \label{sec:radar}
 
 Figure~\ref{fig:radar} provides a visual overview of all techniques explored during the competition.
-The winning path runs through architecture diversity and multi-scale inference, while post-processing and specialization directions consistently showed diminishing or negative returns.
+The path to our best result runs through architecture diversity and multi-scale inference, while post-processing and specialization directions consistently showed diminishing or negative returns.
 
 \begin{figure}[H]
 \centering
@@ -336,7 +336,7 @@ The winning path runs through architecture diversity and multi-scale inference, 
 % Legend
 \begin{scope}[shift={(-10,-9.5)}]
   \node[font=\sffamily\small\bfseries, color=dirlabel, anchor=west] at (0,1.2) {Legend};
-  \node[best, anchor=west] at (0, 0.6) {In winning submission};
+  \node[best, anchor=west] at (0, 0.6) {In final submission};
   \node[tried, anchor=west] at (0, 0) {Tried / stepping stone};
   \node[failed, anchor=west] at (0, -0.6) {Tried \& hurt performance};
   \draw[goldcolor!80!black, thick, fill=goldcolor!30] (5.2,0) circle (0.25);
@@ -346,7 +346,7 @@ The winning path runs through architecture diversity and multi-scale inference, 
 \end{scope}
 
 \end{tikzpicture}
-\caption{Technique exploration radar showing all approaches tried during the competition. The winning path runs through architecture diversity (North) and multi-scale inference (ENE). Post-processing and specialization (red nodes) consistently failed to generalize.}
+\caption{Technique exploration radar showing all approaches tried during the competition. The path to our best result runs through architecture diversity (North) and multi-scale inference (ENE). Post-processing and specialization (red nodes) consistently failed to generalize.}
 \label{fig:radar}
 \end{figure}
 
@@ -361,7 +361,7 @@ The progression tells the story of our approach: the massive jump from single mo
 
 \begin{table}[H]
 \centering
-\caption{Competition submissions with public test scores. The final submission achieved 0.9226 on public and 0.7113 on private test (1st place).}
+\caption{Competition submissions with public test scores. The final submission achieved 0.9226 on public and 0.7113 on private test.}
 \label{tab:submissions}
 \small
 \begin{tabular}{@{}clccc@{}}
@@ -479,7 +479,7 @@ Our approach stands out by its absence of synthetic data.
 We focused entirely on the 248 provided shelf images, investing our time in model architecture diversity and inference strategy rather than data augmentation.
 The domain gap between clean product photos and real shelf crops proved too large for most synthetic approaches to bridge.
 
-\paragraph{Multi-model ensembles were the universal winning strategy.}
+\paragraph{Multi-model ensembles were the dominant strategy.}
 Andreas Hatlem (0.9220) used 3-model WBF with YOLOv8x + YOLO26-x + a K-fold model at 1280px, and independently discovered the same diversity principle we relied on: his weakest individual model (K-fold~2, 0.749~mAP) consistently gave the best ensemble results, and every swap for a stronger model made the ensemble worse.
 Walgermo from Matriks (0.9208) used a 3-model YOLOv8l ensemble with random seeds after a parameter sweep.
 
@@ -559,7 +559,7 @@ Understanding both aspects shaped our approach.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented the winning solution to the NM i AI 2026 NorgesGruppen product detection task, achieving 1st place with 0.7113~mAP on the private test set.
+We presented our solution to the NM i AI 2026 NorgesGruppen product detection task, achieving 0.7113~mAP on the private test set.
 Our approach combined three YOLO architectures (YOLOv8x, YOLO11x, YOLOv8l) with diverse augmentation strategies, multi-scale inference, and Weighted Boxes Fusion --- without any synthetic data, external datasets, or post-processing tricks.
 The primary lesson for practitioners: when the test distribution is uncertain, bet on diversity, not accuracy.
 
